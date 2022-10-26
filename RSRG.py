@@ -14,19 +14,22 @@ b_vals = np.array([0.105])#np.arange(0.1,0.3,0.03)
 
 
 
-def run_decimation(L, steps, a_vals, b_vals):
+def run_decimation(L, steps, measure_step, a_vals, b_vals, track_moments=False):
     Gamma_array = np.zeros(shape=(len(a_vals), len(b_vals), steps))
     R0_array = []
+    mu_array = []
     #R0_array_err = []
 
     for l, a in enumerate(a_vals):
         for m, b in enumerate(b_vals):
 
             ind_dict, adj_ind = triangle_lattice_dictionary(L)
-
+            
+            
             J_ij_vals = fill_J_ij_matrix(L*L, adj_ind, a, b)
             h_vals = np.exp(-np.random.exponential(size=L*L))
-
+            if track_moments: cluster_tracker = np.ones(L*L)
+            
             Omega_0 = max(h_vals.max(), J_ij_vals.max())
             for step in range(steps):
 
@@ -57,6 +60,11 @@ def run_decimation(L, steps, a_vals, b_vals):
 
                     eye = chunk_deleter([j], L*L)
                     J_ij_vals = eye @ J_ij_vals @ eye
+                    
+                    if track_moments:
+                        cluster_tracker[i] += cluster_tracker[j]
+                        cluster_tracker[j] = 0
+                    
                 elif Omega == h_vals.max():
                     """
                     """
@@ -72,15 +80,20 @@ def run_decimation(L, steps, a_vals, b_vals):
                     J_ij_vals = eye @ J_ij_vals @ eye
 
                     adj_ind = update_adjacency_h(adj_ind, i)
-                if step%50 == 0:
+                if step%measure_step == 0:
                     h_vals_remain = h_vals[h_vals!=0]
 
-                    n,bins, pacthes = plt.hist(-np.log(h_vals_remain), density=True, bins = 40)
+                    n,bins = np.histogram(-np.log(h_vals_remain), density=True, bins = 40)
 
                     width = bins[1]-bins[0]
                     popt, pcov = curve_fit(exponential_dist, bins[1:]-width/2, n)
                     R0_array.append(popt[1])
                     #R0_array_err.append(pcov[0][0])
+                    
+                    if track_moments:
+                        cluster_moments = cluster_tracker[cluster_tracker!=0]
+                        mu_array.append(cluster_moments.mean())
+    if track_moments: return J_ij_vals, h_vals, np.array(R0_array), np.array(mu_array)
     return J_ij_vals, h_vals, np.array(R0_array)
 
 

@@ -33,18 +33,59 @@ def square_lattice_dictionary(L):
 def triangle_lattice_dictionary(L):
     ind_dict = {}
     adj_ind = {}
-                
+    
     for x in range(L):
         for y in range(L):
             ind_0 = index_map(x,y,L)
+            
+            #nn indices
+            adjs = [index_map(x,(y+1)%L, L), index_map(x,(y-1)%L, L), index_map((x+1)%L,y, L), index_map((x-1)%L,y, L)]
+            adjs.append(index_map((x+1)%L,(y-(-1)**(x%2))%L, L))
+            adjs.append(index_map((x-1)%L,(y-(-1)**(x%2))%L, L))
+            
+            #nnn indices
+            adjs += [index_map(x,(y+2)%L, L), index_map(x,(y-2)%L, L), index_map((x+2)%L,y, L), index_map((x-2)%L,y, L)]
+            adjs += [index_map((x+2)%L,(y+1)%L, L), index_map((x+2)%L,(y-1)%L, L), index_map((x-2)%L,(y+1)%L, L), index_map((x-2)%L,(y-1)%L, L)]
+            adjs += [index_map((x+1)%L,(y+(-1)**(x%2))%L, L), index_map((x+1)%L,(y-2*(-1)**(x%2))%L, L)]
+            adjs += [index_map((x-1)%L,(y+(-1)**(x%2))%L, L), index_map((x-1)%L,(y-2*(-1)**(x%2))%L, L)] 
+            
+            ind_dict[ind_0] = (x,y)
+            adj_ind[ind_0] = adjs
+    return ind_dict, adj_ind
 
+#Nearest neighbour indices for triangle lattice
+def triangle_nn_indices(L):
+    adj_ind = {}
+    
+    for x in range(L):
+        for y in range(L):
+            ind_0 = index_map(x,y,L)
+            
+            #nn indices
             adjs = [index_map(x,(y+1)%L, L), index_map(x,(y-1)%L, L), index_map((x+1)%L,y, L), index_map((x-1)%L,y, L)]
             adjs.append(index_map((x+1)%L,(y-(-1)**(x%2))%L, L))
             adjs.append(index_map((x-1)%L,(y-(-1)**(x%2))%L, L))
 
-            ind_dict[ind_0] = (x,y)
             adj_ind[ind_0] = adjs
-    return ind_dict, adj_ind
+    return adj_ind
+
+#Second Nearest neighbour indices for triangle lattice
+def triangle_nnn_indices(L):
+    adj_ind = {}
+    
+    for x in range(L):
+        for y in range(L):
+            ind_0 = index_map(x,y,L)
+            
+            #nnn indices
+            adjs = [index_map(x,(y+2)%L, L), index_map(x,(y-2)%L, L), index_map((x+2)%L,y, L), index_map((x-2)%L,y, L)]
+            adjs += [index_map((x+2)%L,(y+1)%L, L), index_map((x+2)%L,(y-1)%L, L), index_map((x-2)%L,(y+1)%L, L), index_map((x-2)%L,(y-1)%L, L)]
+            adjs += [index_map((x+1)%L,(y+(-1)**(x%2))%L, L), index_map((x+1)%L,(y-2*(-1)**(x%2))%L, L)]
+            adjs += [index_map((x-1)%L,(y+(-1)**(x%2))%L, L), index_map((x-1)%L,(y-2*(-1)**(x%2))%L, L)] 
+            
+            adj_ind[ind_0] = adjs
+    return adj_ind
+
 
 #Functions for fitting to distributions
 
@@ -63,7 +104,7 @@ def exponential_dist(x, A, b):
 #Custom probability distribution with linear pdf a+bx, normalized
 
 
-def random_custDist(a,b,custDist,size=None, nControl=10**6):
+def random_nnDist(a,b,custDist,size=None, nControl=10**6):
     #genearte a list of size random samples, obeying the distribution custDist
     #suggests random samples between x0 and x1 and accepts the suggestion with probability custDist(x)
     #custDist noes not need to be normalized. Add this condition to increase performance. 
@@ -83,7 +124,23 @@ def random_custDist(a,b,custDist,size=None, nControl=10**6):
         nLoop+=1
     return samples
 
-def custDist(x, a, b):
+def random_nnnDist(w,a,b,custDist,size=None, nControl=10**6):
+    samples=[]
+    nLoop=0
+    
+    low = w
+    high = (np.sqrt(a**2 + 2*b*(1+a*w+b*w**2/2))-a)/b
+    
+    while len(samples)<size and nLoop<nControl:
+        x=np.random.uniform(low=low,high=high)
+        prop=custDist(x, a, b)
+        assert prop>=0 and prop<=1
+        if np.random.uniform(low=0,high=1) <=prop:
+            samples += [x]
+        nLoop+=1
+    return samples
+
+def linDist(x, a, b):
     return a + b*x
 
 #Functions for updating adjaceny set of a lattice index after decimation procedure
@@ -120,13 +177,24 @@ def update_adjacency_h(adj_ind, i):
 
 
 #Fills the sparse coupling matrix with samples from the custom linear distribution
-def fill_J_ij_matrix(size, adj_ind, a, b):
+def fill_J_ij_matrix(size, nn_ind, nnn_ind, a, b, include_nnn=True):
     J_ij_vals = sparse.lil_matrix((size, size))
     for ind in range(size):
-        J_ij_vals[ind, adj_ind[ind]] = sparse.lil_matrix(np.exp(-np.array(random_custDist(a, b, custDist=custDist, size=len(adj_ind[ind])))))
         
-    J_ij_vals = sparse.triu(J_ij_vals, k=1)
-    
+        #Filling nn bonds
+        adj_ind_array = np.array(nn_ind[ind])
+        upper_ind = adj_ind_array[adj_ind_array>ind]
+        
+        J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnDist(a/3.0, b/3.0, custDist=linDist, size=len(upper_ind)))))
+        
+        if include_nnn:
+            #Filling nnn bonds
+            w = (np.sqrt((a/3)**2 + 2*(b/3)) - a/3)/(b/3)
+            adj_ind_array = np.array(nnn_ind[ind])
+            upper_ind = adj_ind_array[adj_ind_array>ind]
+
+            J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnnDist(w, a/6.0, b/6.0, custDist=linDist, size=len(upper_ind)))))
+
     return J_ij_vals + J_ij_vals.T
 
 #sparse identity matrix with zeroes at the specified indices (for efficient zeroing rows/columns of sparse matrices)

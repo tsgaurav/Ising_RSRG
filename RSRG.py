@@ -24,9 +24,10 @@ def run_decimation(L, steps, measure_step, a_vals, b_vals, track_moments=False):
         for m, b in enumerate(b_vals):
 
             ind_dict, adj_ind = triangle_lattice_dictionary(L)
-            
-            
-            J_ij_vals = fill_J_ij_matrix(L*L, adj_ind, a, b)
+            nn_ind = triangle_nn_indices(L)
+            nnn_ind = triangle_nnn_indices(L)
+
+            J_ij_vals = fill_J_ij_matrix(L*L, nn_ind, nnn_ind, a, b)
             h_vals = np.exp(-np.random.exponential(size=L*L))
             if track_moments: cluster_tracker = np.ones(L*L)
             

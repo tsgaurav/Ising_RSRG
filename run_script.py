@@ -1,62 +1,49 @@
 #!/usr/bin/env python
-import RSRG
-import time
 from mpi4py import MPI
-
-L = 30    #System size of LxL
-steps = int(0.9 * L*L)   #Number of decimation steps
-
-a_vals = np.array([0.1])     #Parameters on linear pdf a+bx
-b_vals = np.array([0.1])
-
-
-def myFun(x):
-    return x+2
-    # simple example, the real one would be complicated
+import numpy as np
+from aux_funcs import *
+from RSRG import *
+from RSRG_class import *
+from copy import deepcopy
+import time
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
-data = [np.arange(3)]*2   # init the data    
+n_processes = comm.size
 
-if rank == 0: # The master is the only process that reads the file
-    data = [np.arange(2)]*2# something read from file
 
-# Divide the data among processes
-data = comm.scatter(data, root=0)
+L = 30
+steps = int(0.95*L*L)
+measure_step = 20
+a, b = 0.1, 0.1
+ind_dict, adj_ind = triangle_lattice_dictionary(L)
+nn_ind = triangle_nn_indices(L)
+nnn_ind = triangle_nnn_indices(L)
 
-result = []
-for item in data:
-    result.append(myFun(item))
+n_runs = 1
 
-# Send the results back to the master processes
-newData = comm.gather(result,root=0)
 
-print(result)mport numpy as np
+data = [[1]]*n_processes   # init the data    
 
-def myFun(x):
-    return x+2
-    # simple example, the real one would be complicated
-
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank() # get your process ID
-data = [np.arange(3)]*2   # init the data    
-
-if rank == 0: # The master is the only process that reads the file
-    data = [np.arange(2)]*2# something read from file
+#if rank == 0: # The master is the only process that reads the file
+#    data = data# something read from file
 
 # Divide the data among processes
 data = comm.scatter(data, root=0)
+index = 0
 
-result = []
-for item in data:
-    result.append(myFun(item))
-
+R0_array_sum = np.zeros(shape=(n_processes, int(np.ceil(steps/measure_step - 1))))
+for item in data:  #Sending to processes
+    for inst in range(n_runs):  #Within each process
+        J_ij_vals = fill_J_ij_matrix(L*L, nn_ind, nnn_ind, a, b)
+        h_vals = np.exp(-np.random.exponential(size=L*L))
+        test = system(L*L, deepcopy(adj_ind), J_ij_vals, h_vals) 
+        for i in range(steps):
+            test.decimate()
+        
+        R0_array_sum[index,:] += np.array(test.R0_array)
+        index += 1
 # Send the results back to the master processes
-newData = comm.gather(result,root=0)
+newData = comm.gather(R0_array_sum,root=0)
 
-print(result)
-
-
-
-
-J_ij_vals, h_vals, np.array(R0_array) = run_decimation(L, steps, a_vals, b_vals)
+np.save("output/Ising_2D_"+str(int(time.time())), R0_array_sum.sum(axis=0))

@@ -203,13 +203,16 @@ def chunk_deleter(ind_array, size):
     eye_diag[ind_array] = 0
     return sparse.diags(eye_diag)
 
-#efficient zeroing of sparse matrix elements below given tolerance
+#efficient zeroing of sparse matrix elements below given tolerance (Need to fix, has issues)
 def resparse(spr_mat, size, tol):
     i_ind, j_ind, vals = sparse.find(spr_mat)
     mask = vals>tol
     i_new, j_new, val_new = i_ind[mask], j_ind[mask], vals[mask]
     
     return sparse.csr_matrix((val_new, (i_new, j_new)), shape=(size, size))
+
+
+
 
 
 

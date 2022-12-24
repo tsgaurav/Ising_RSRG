@@ -8,10 +8,10 @@ def myFun(x):
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
-data = [np.arange(3)]*2   # init the data    
+data = [np.arange(3)]*comm.size   # init the data    
 
 if rank == 0: # The master is the only process that reads the file
-    data = [np.arange(2)]*2# something read from file
+    data = data#[np.arange(2)]*2# something read from file
 
 # Divide the data among processes
 data = comm.scatter(data, root=0)

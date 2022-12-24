@@ -2,28 +2,35 @@
 from aux_funcs import *
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from iminuit import cost, Minuit
 
 
 class system:
     
-    def __init__(self, size, adj_ind, J_ij_vals, h_vals):
+    def __init__(self, size, adj_ind, J_ij_vals, h_vals, measure_step=20):
         
         self.size = size
         self.adj_ind = adj_ind
         self.J_ij_vals = J_ij_vals
         self.h_vals = h_vals
         
+        self.measure_step = measure_step
+        self.N = 0
+        self.R0_array = []
         self.Gamma_array = []
         self.Omega_0 = max(h_vals.max(), J_ij_vals.max())
         self.Omega = self.Omega_0 
         return None
     
     def decimate(self):
+        self.N += 1
         Omega = max(self.h_vals.max(), self.J_ij_vals.max())
         self.Omega = Omega
         self.Gamma_array.append(np.log(self.Omega_0/Omega))
         if Omega == self.J_ij_vals.max(): self.J_decimation(Omega)
         elif Omega == self.h_vals.max(): self.h_decimation(Omega)
+         
+        if self.N%self.measure_step==0: self.R0_array.append(self.extract_width())
         
         return None
     
@@ -59,3 +66,11 @@ class system:
 
         update_adjacency_h(self.adj_ind, i)
         return None
+    
+    def extract_width(self):
+        #Get width of exponential distribution by fitting field couplings to normalized exponential
+        h_remain = self.h_vals[self.h_vals!=0]
+        c = cost.UnbinnedNLL(-np.log(h_remain/self.Omega), exponential_dist_norm)
+        m = Minuit(c, a=0.8)
+        m.migrad()
+        return m.values[0]

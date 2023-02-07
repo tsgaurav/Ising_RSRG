@@ -113,7 +113,8 @@ def random_nnDist(a,b,custDist,size=None, nControl=10**6):
     nLoop=0
     
     low = 0
-    high = (np.sqrt(a**2 + 2*b) - a)/b
+    #high = (np.sqrt(a**2 + 2*b) - a)/b
+    high = (np.sqrt(a**2 + 6*b) - a)/b    #Corrected for alternate sampling method
     
     while len(samples)<size and nLoop<nControl:
         x=np.random.uniform(low=low,high=high)
@@ -124,12 +125,12 @@ def random_nnDist(a,b,custDist,size=None, nControl=10**6):
         nLoop+=1
     return samples
 
-def random_nnnDist(w,a,b,custDist,size=None, nControl=10**6):
+def random_nnnDist(a,b,custDist,size=None, nControl=10**6):
     samples=[]
     nLoop=0
     
-    low = w
-    high = (np.sqrt(a**2 + 2*b*(1+a*w+b*w**2/2))-a)/b
+    low = (np.sqrt(a**2 + 6*b) - a)/b
+    high = (np.sqrt(a**2 + 2*b*(9+a*low+b*low**2/2))-a)/b
     
     while len(samples)<size and nLoop<nControl:
         x=np.random.uniform(low=low,high=high)
@@ -142,6 +143,15 @@ def random_nnnDist(w,a,b,custDist,size=None, nControl=10**6):
 
 def linDist(x, a, b):
     return a + b*x
+
+
+#Corrected for alternate sampling method - select width first from spin density and then normalize too pdf
+def linDist_nn(x, a, b):
+    return (a + b*x)/3.0
+
+def linDist_nnn(x, a, b):
+    return (a + b*x)/9.0
+
 
 #Functions for updating adjaceny set of a lattice index after decimation procedure
 
@@ -177,7 +187,7 @@ def update_adjacency_h(adj_ind, i):
 
 
 #Fills the sparse coupling matrix with samples from the custom linear distribution
-def fill_J_ij_matrix(size, nn_ind, nnn_ind, a, b, include_nnn=True):
+def fill_J_ij_matrix(size, nn_ind, nnn_ind, a, b, include_nnn=False):
     J_ij_vals = sparse.lil_matrix((size, size))
     for ind in range(size):
         
@@ -185,15 +195,14 @@ def fill_J_ij_matrix(size, nn_ind, nnn_ind, a, b, include_nnn=True):
         adj_ind_array = np.array(nn_ind[ind])
         upper_ind = adj_ind_array[adj_ind_array>ind]
         
-        J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnDist(a/3.0, b/3.0, custDist=linDist, size=len(upper_ind)))))
+        J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnDist(a, b, custDist=linDist_nn, size=len(upper_ind)))))
         
         if include_nnn:
             #Filling nnn bonds
-            w = (np.sqrt((a/3)**2 + 2*(b/3)) - a/3)/(b/3)
             adj_ind_array = np.array(nnn_ind[ind])
             upper_ind = adj_ind_array[adj_ind_array>ind]
 
-            J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnnDist(w, a/6.0, b/6.0, custDist=linDist, size=len(upper_ind)))))
+            J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnnDist(a, b, custDist=linDist_nnn, size=len(upper_ind)))))
 
     return J_ij_vals + J_ij_vals.T
 
@@ -210,6 +219,22 @@ def resparse(spr_mat, size, tol):
     i_new, j_new, val_new = i_ind[mask], j_ind[mask], vals[mask]
     
     return sparse.csr_matrix((val_new, (i_new, j_new)), shape=(size, size))
+
+
+def update_cluster(cluster_dict, reverse_dict,site1, site2):
+    #Takes in a dictionary containing the site->cluster mapping, cluster->set of sites mapping, and the two sites being decimated
+    #Returns updated dictionaries, containing the new cluster data
+    clust1 = cluster_dict[site1]   #cluster of site 1
+    clust2 = cluster_dict[site2]   #cluster of site 2
+    
+    #Add spins in clust2 to clust1
+    for dec_site in reverse_dict[clust2]:
+        cluster_dict[dec_site] = clust1
+    
+    reverse_dict[clust1] += reverse_dict[clust2]
+    reverse_dict[clust2] = None
+    
+    return cluster_dict, reverse_dict
 
 
 

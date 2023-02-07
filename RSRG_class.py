@@ -20,6 +20,11 @@ class system:
         self.Gamma_array = []
         self.Omega_0 = max(h_vals.max(), J_ij_vals.max())
         self.Omega = self.Omega_0 
+        
+        self.clust_dict = {i:i for i in range(size)}
+        self.reverse_dict = {i:[i] for i in range(size)}  #Cluster index is key and vals is list with lattice indices in cluster 
+        
+        
         return None
     
     def decimate(self):
@@ -43,6 +48,8 @@ class system:
         self.h_vals[j] = 0
 
         update_adjacency_J_ij(self.adj_ind, i, j)
+        
+        self.clust_dict, self.reverse_dict = update_cluster(self.clust_dict, self.reverse_dict, i, j)
 
         self.J_ij_vals[i,self.adj_ind[i]] = self.J_ij_vals[i, self.adj_ind[i]].maximum(self.J_ij_vals[j, self.adj_ind[i]])
         self.J_ij_vals[self.adj_ind[i], i] = self.J_ij_vals[i,self.adj_ind[i]]

@@ -63,11 +63,11 @@ newData = comm.gather(R0_array_sum,root=0)
 
 ts = str(int(time.time()))
 
-with open("output/Ising_2D_h_dist_"+ts, "wb") as fp:   #Pickling
+with open("output/Ising_2D_h_dist_"+ts+".pkl", "wb") as fp:   #Pickling
     pickle.dump(h_dist_list, fp)
 
-with open("output/Ising_2D_J_dist_"+ts, "wb") as fp:   #Pickling
+with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
     pickle.dump(J_dist_list, fp)
 
-with open("output/Ising_2D_input_"+ts, "wb") as fp:
+with open("output/Ising_2D_input_"+ts+".pkl", "wb") as fp:
     pickle.dump(input_dict, fp)

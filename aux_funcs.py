@@ -237,6 +237,10 @@ def update_cluster(cluster_dict, reverse_dict,site1, site2):
     return cluster_dict, reverse_dict
 
 
+def gen_check_list(size, steps, divs):
+    i_vals = np.arange(divs)
+    C = np.log(size/(size-steps))/(divs-1)
+    return np.floor(size*np.exp(-i_vals * C)).astype(int)
 
 
 

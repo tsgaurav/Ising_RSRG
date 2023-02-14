@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from mpi4py import MPI
 import numpy as np
 
@@ -9,6 +9,7 @@ def myFun(x):
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 data = [np.arange(3)]*comm.size   # init the data    
+
 
 if rank == 0: # The master is the only process that reads the file
     data = data#[np.arange(2)]*2# something read from file

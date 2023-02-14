@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from mpi4py import MPI
 import numpy as np
 from aux_funcs import *
@@ -12,7 +12,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-L = 30
+L = 100
 steps = int(0.95*L*L)
 measure_step = 20
 a, b = 0.1, 0.1

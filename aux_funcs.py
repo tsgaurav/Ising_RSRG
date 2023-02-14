@@ -2,6 +2,8 @@
 
 import numpy as np
 from scipy import sparse
+from sympy import Symbol, Interval
+from sympy.stats import ContinuousRV, sample
 
 """
 Idea is to index a 2D array using some 1D curve. Thus, there is an index mapping from each (x,y)->ind
@@ -152,6 +154,10 @@ def linDist_nn(x, a, b):
 def linDist_nnn(x, a, b):
     return (a + b*x)/9.0
 
+def random_lin_dist_width(a, b, w, n_samples):
+    x = Symbol('x')
+    X = ContinuousRV(x, (a+b*x)/(a*w + b*w**2/2), Interval(0, w))
+    return sample(X, size=(n_samples))
 
 #Functions for updating adjaceny set of a lattice index after decimation procedure
 
@@ -203,6 +209,19 @@ def fill_J_ij_matrix(size, nn_ind, nnn_ind, a, b, include_nnn=False):
             upper_ind = adj_ind_array[adj_ind_array>ind]
 
             J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_nnnDist(a, b, custDist=linDist_nnn, size=len(upper_ind)))))
+
+    return J_ij_vals + J_ij_vals.T
+
+def fill_J_ij_matrix_width(size, nn_ind, a, b, w):
+    J_ij_vals = sparse.lil_matrix((size, size))
+    for ind in range(size):
+        
+        #Filling nn bonds
+        adj_ind_array = np.array(nn_ind[ind])
+        upper_ind = adj_ind_array[adj_ind_array>ind]
+        
+        J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_lin_dist_width(a, b, w, len(upper_ind)))))
+        
 
     return J_ij_vals + J_ij_vals.T
 

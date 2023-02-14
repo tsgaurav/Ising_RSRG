@@ -7,12 +7,13 @@ from iminuit import cost, Minuit
 
 class system:
     
-    def __init__(self, size, adj_ind, J_ij_vals, h_vals, measure_step=20):
+    def __init__(self, size, adj_ind, J_ij_vals, h_vals, measure_step=20, sparsify=False):
         
         self.size = size
         self.adj_ind = adj_ind
         self.J_ij_vals = J_ij_vals
         self.h_vals = h_vals
+        self.sparsify = sparsify
         
         self.measure_step = measure_step
         self.N = 0
@@ -62,9 +63,11 @@ class system:
         i = np.where(self.h_vals == self.h_vals.max())[0][0]
         adj_i = self.adj_ind[i]
         J_ij_new = self.J_ij_vals[adj_i, i] @self.J_ij_vals[i, adj_i]/Omega
-
+        
+        if self.sparsify: J_ij_new.data[J_ij_new.data<self.Omega_0/2]=0
+        
         self.J_ij_vals[adj_i, :][:, adj_i] = J_ij_new.maximum(self.J_ij_vals[adj_i,:][:, adj_i])
-
+        
         self.h_vals[i] = 0
 
         eye = chunk_deleter([i], self.size)

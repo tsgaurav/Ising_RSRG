@@ -12,7 +12,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-L = 100
+L = 20
 steps = int(0.95*L*L)
 measure_step = 20
 a, b, w = 0.1, 0.105, 4
@@ -22,26 +22,37 @@ nnn_ind = triangle_nnn_indices(L)
 
 measure_list = gen_check_list(L*L, steps-1, 20)
 
-J_dist_list = [np.array([]) for step in range(len(measure_list))]
-h_dist_list = [np.array([]) for step in range(len(measure_list))]
+
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 10
+n_runs = 1
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,"(a,b,w)":(a,b,w), "n_runs":n_runs*n_processes}
 
-data = [[1]]*n_processes   # init the data    
 
-#if rank == 0: # The master is the only process that reads the file
-#    data = data# something read from file
+if rank == 0: # The master is the only process that reads the file
+    #data = data# something read from file
+    data = [[1]]*n_processes
 
-# Divide the data among processes
+else:
+    data = None
+
+
+#Divide the data among processes
 data = comm.scatter(data, root=0)
 index = 0
+
+
+J_dist_list = [np.array([]) for step in range(len(measure_list))]
+h_dist_list = [np.array([]) for step in range(len(measure_list))]
+
+Omega_list_composite = np.array([])
+decimation_type_composite = np.array([], dtype=bool)
 
 R0_array_sum = np.zeros(shape=(n_processes, int(np.ceil(steps/measure_step - 1))))
 for item in data:  #Sending to processes
     for inst in range(n_runs):  #Within each process
+        
         #J_ij_vals = fill_J_ij_matrix(L*L, nn_ind, nnn_ind, a, b)
         J_ij_vals = fill_J_ij_matrix_width(L*L, nn_ind, a, b, w)
         h_vals = np.exp(-np.random.exponential(size=L*L))
@@ -57,19 +68,37 @@ for item in data:  #Sending to processes
                 J_dist_list[check_acc] = np.concatenate((J_dist_list[check_acc], J_remain))
 
                 check_acc+=1
-        
+    Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
+    decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
+
+data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
+
 # Send the results back to the master processes
-newData = comm.gather(R0_array_sum,root=0)
 
+
+processed_data = comm.gather(data,root=0)
+#J_dist_list_proc = comm.gather(J_dist_list, root=0)
+#h_dist_list_proc = comm.gather(h_dist_list, root=0)
+#Omega_list_composite_proc = comm.gather(Omega_list_composite, root=0)
+#decimation_type_composite_proc = comm.gather(decimation_type_composite, root=0)
+
+#with open("test.pkl", "wb") as fp:
+#    pickle.dump(comm.gather(data, root=0), fp)
 #np.save("output/Ising_2D_"+str(int(time.time())), R0_array_sum.sum(axis=0))
+if rank == 0:
 
-ts = str(int(time.time()))
+    #J_dist_list = np.concatenate(J_dist_list_proc, axis=0)
+    
+    ts = str(int(time.time()))
+    
+    with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
+        pickle.dump(processed_data, fp)
 
-with open("output/Ising_2D_h_dist_"+ts+".pkl", "wb") as fp:   #Pickling
-    pickle.dump(h_dist_list, fp)
+    #with open("output/Ising_2D_h_dist_"+ts+".pkl", "wb") as fp:   #Pickling
+        #pickle.dump(h_dist_list, fp)
 
-with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
-    pickle.dump(J_dist_list, fp)
+    #with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
+        #pickle.dump(J_dist_list, fp)
 
-with open("output/Ising_2D_input_"+ts+".pkl", "wb") as fp:
-    pickle.dump(input_dict, fp)
+    with open("output/Ising_2D_input_"+ts+".pkl", "wb") as fp:
+        pickle.dump(input_dict, fp)

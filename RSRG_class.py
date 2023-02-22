@@ -19,6 +19,8 @@ class system:
         self.N = 0
         self.R0_array = []
         self.Gamma_array = []
+        self.Omega_array = []
+        self.coupling_dec_list = []
         self.Omega_0 = max(h_vals.max(), J_ij_vals.max())
         self.Omega = self.Omega_0 
         
@@ -33,8 +35,13 @@ class system:
         Omega = max(self.h_vals.max(), self.J_ij_vals.max())
         self.Omega = Omega
         self.Gamma_array.append(np.log(self.Omega_0/Omega))
-        if Omega == self.J_ij_vals.max(): self.J_decimation(Omega)
-        elif Omega == self.h_vals.max(): self.h_decimation(Omega)
+        self.Omega_array.append(Omega)
+        if Omega == self.J_ij_vals.max(): 
+            self.J_decimation(Omega)
+            self.coupling_dec_list.append(True)
+        elif Omega == self.h_vals.max(): 
+            self.h_decimation(Omega)
+            self.coupling_dec_list.append(False)
          
         if self.N%self.measure_step==0: self.R0_array.append(self.extract_width())
         

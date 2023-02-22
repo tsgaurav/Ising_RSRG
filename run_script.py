@@ -15,7 +15,7 @@ n_processes = comm.size
 L = 20
 steps = int(0.95*L*L)
 measure_step = 20
-a, b, w = 0.1, 0.105, 4
+a, b, w = 0.1, 0.105, 10
 ind_dict, adj_ind = triangle_lattice_dictionary(L)
 nn_ind = triangle_nn_indices(L)
 nnn_ind = triangle_nnn_indices(L)
@@ -25,7 +25,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 1
+n_runs = 2
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,"(a,b,w)":(a,b,w), "n_runs":n_runs*n_processes}
 
@@ -46,10 +46,13 @@ index = 0
 J_dist_list = [np.array([]) for step in range(len(measure_list))]
 h_dist_list = [np.array([]) for step in range(len(measure_list))]
 
+
 Omega_list_composite = np.array([])
 decimation_type_composite = np.array([], dtype=bool)
 
-R0_array_sum = np.zeros(shape=(n_processes, int(np.ceil(steps/measure_step - 1))))
+cluster_dict_list = []
+reverse_clust_dict_list = []
+
 for item in data:  #Sending to processes
     for inst in range(n_runs):  #Within each process
         
@@ -68,15 +71,19 @@ for item in data:  #Sending to processes
                 J_dist_list[check_acc] = np.concatenate((J_dist_list[check_acc], J_remain))
 
                 check_acc+=1
-    Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
-    decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
-
+        Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
+        decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
+        cluster_dict_list.append(test.clust_dict)
+        reverse_clust_dict_list.append(test.reverse_dict)
 data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
+clust_data = [cluster_dict_list, reverse_clust_dict_list]
 
 # Send the results back to the master processes
 
 
 processed_data = comm.gather(data,root=0)
+clust_list_final = comm.gather(clust_data, root=0)
+
 #J_dist_list_proc = comm.gather(J_dist_list, root=0)
 #h_dist_list_proc = comm.gather(h_dist_list, root=0)
 #Omega_list_composite_proc = comm.gather(Omega_list_composite, root=0)
@@ -94,8 +101,8 @@ if rank == 0:
     with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(processed_data, fp)
 
-    #with open("output/Ising_2D_h_dist_"+ts+".pkl", "wb") as fp:   #Pickling
-        #pickle.dump(h_dist_list, fp)
+    with open("output/Ising_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
+        pickle.dump(clust_list_final, fp)
 
     #with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
         #pickle.dump(J_dist_list, fp)

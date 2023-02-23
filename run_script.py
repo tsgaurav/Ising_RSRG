@@ -7,15 +7,17 @@ from RSRG_class import *
 from copy import deepcopy
 import time
 import pickle
+import sys
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-L = 20
+L = 70
 steps = int(0.95*L*L)
 measure_step = 20
-a, b, w = 0.1, 0.105, 10
+a, b = 0.1, 0.105
+w = float(sys.argv[1])
 ind_dict, adj_ind = triangle_lattice_dictionary(L)
 nn_ind = triangle_nn_indices(L)
 nnn_ind = triangle_nnn_indices(L)
@@ -25,7 +27,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 2
+n_runs = 16
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,"(a,b,w)":(a,b,w), "n_runs":n_runs*n_processes}
 

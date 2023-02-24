@@ -12,7 +12,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-L = 50
+L = 60
 steps = int(0.95*L*L)
 measure_step = 20
 a, b = 0.1, 0.105
@@ -28,7 +28,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 n_runs = 8
 
-input_dict = {"L":L, "steps":steps,"measure_list":measure_list,"(a,b,w)":(a,b,w), "n_runs":n_runs*n_processes}
+input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w "n_runs":n_runs*n_processes}
 
 
 if rank == 0: # The master is the only process that reads the file

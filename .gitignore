@@ -19,4 +19,4 @@ __pycache__
 *.npy
 *.png
 *.pkl
-/output/log_file.csv
+*.csv

@@ -28,7 +28,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 n_runs = 8
 
-input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w "n_runs":n_runs*n_processes}
+input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 
 
 if rank == 0: # The master is the only process that reads the file

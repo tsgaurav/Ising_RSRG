@@ -12,7 +12,7 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-L = 60
+L = int(sys.argv[2])
 steps = int(0.95*L*L)
 measure_step = 20
 a, b = 0.1, 0.105
@@ -26,7 +26,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 8
+n_runs = 5
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 

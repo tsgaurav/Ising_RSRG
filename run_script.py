@@ -15,7 +15,8 @@ n_processes = comm.size
 L = int(sys.argv[2])
 steps = int(0.95*L*L)
 measure_step = 20
-a, b = 0.1, 0.105
+a = float(sys.argv[3])
+b = 0.105
 w = float(sys.argv[1])
 ind_dict, adj_ind = triangle_lattice_dictionary(L)
 nn_ind = triangle_nn_indices(L)
@@ -26,7 +27,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 10
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 

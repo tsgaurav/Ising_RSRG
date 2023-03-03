@@ -27,7 +27,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 10
+n_runs = 5
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 
@@ -86,14 +86,7 @@ clust_data = [cluster_dict_list, reverse_clust_dict_list]
 processed_data = comm.gather(data,root=0)
 clust_list_final = comm.gather(clust_data, root=0)
 
-#J_dist_list_proc = comm.gather(J_dist_list, root=0)
-#h_dist_list_proc = comm.gather(h_dist_list, root=0)
-#Omega_list_composite_proc = comm.gather(Omega_list_composite, root=0)
-#decimation_type_composite_proc = comm.gather(decimation_type_composite, root=0)
 
-#with open("test.pkl", "wb") as fp:
-#    pickle.dump(comm.gather(data, root=0), fp)
-#np.save("output/Ising_2D_"+str(int(time.time())), R0_array_sum.sum(axis=0))
 if rank == 0:
 
     #J_dist_list = np.concatenate(J_dist_list_proc, axis=0)

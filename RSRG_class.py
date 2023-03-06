@@ -43,7 +43,7 @@ class system:
             self.h_decimation(Omega)
             self.coupling_dec_list.append(False)
          
-        if self.N%self.measure_step==0: self.R0_array.append(self.extract_width())
+        #if self.N%self.measure_step==0: self.R0_array.append(self.extract_width())
         
         return None
     

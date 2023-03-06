@@ -13,7 +13,7 @@ rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
 L = int(sys.argv[2])
-steps = int(0.95*L*L)
+steps = int(0.992*L*L)
 measure_step = 20
 a = float(sys.argv[3])
 b = 0.105
@@ -23,11 +23,11 @@ nn_ind = triangle_nn_indices(L)
 nnn_ind = triangle_nnn_indices(L)
 
 measure_list = gen_check_list(L*L, steps-1, 20)
-
+ 
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 20
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 

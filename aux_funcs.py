@@ -221,7 +221,6 @@ def fill_J_ij_matrix_width(size, nn_ind, a, b, w):
         upper_ind = adj_ind_array[adj_ind_array>ind]
         
         J_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.exp(-np.array(random_lin_dist_width(a, b, w, len(upper_ind)))))
-        
 
     return J_ij_vals + J_ij_vals.T
 
@@ -264,6 +263,45 @@ def gen_check_list(size, steps, divs):
 
 
 
+#### MIRRORED FUNCTIONS FOR DECIMATION IN LOG-VARIABLES ####
 
+def fill_zeta_ij_matrix_width(size, nn_ind, a, b, w):
+    zeta_ij_vals = sparse.lil_matrix((size, size))
+    for ind in range(size):
+        
+        #Filling nn bonds
+        adj_ind_array = np.array(nn_ind[ind])
+        upper_ind = adj_ind_array[adj_ind_array>ind]
+        
+        zeta_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.array(random_lin_dist_width(a, b, w, len(upper_ind))))
 
+    return zeta_ij_vals + zeta_ij_vals.T
+
+def update_adjacency_zeta_ij(adj_ind, i, j):
+    #Updates adjaceny set of i with that of j
+    #Also deletes index from the adjacency list of other indices
+    adj_i = adj_ind[i]
+    adj_j = adj_ind[j]
+    
+    adj_i_new = list(set(adj_i+adj_j))
+    adj_i_new = list(set(adj_i_new)-set([i, j]))
+    adj_ind[i] = adj_i_new
+    adj_ind[j] = []
+    
+    for k in adj_i_new:
+        adj_ind[k] = list(set(adj_ind[k]+[i])-set([j]))
+        
+    return None
+
+def update_adjacency_beta(adj_ind, i):
+    #Updates adjacency set of every element in adj(i) with adj(i)
+    #Also deletes index i from adj(k) for all k in adj(i)
+    adj_i = adj_ind[i]
+    
+    for k in adj_ind[i]:
+        adj_ind[k] = list(set(adj_ind[k]+adj_i)-set([i]))
+        
+    adj_ind[i] = []
+    return None
+    
 

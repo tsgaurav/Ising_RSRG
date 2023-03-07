@@ -45,11 +45,11 @@ data = comm.scatter(data, root=0)
 index = 0
 
 
-J_dist_list = [np.array([]) for step in range(len(measure_list))]
-h_dist_list = [np.array([]) for step in range(len(measure_list))]
+zeta_dist_list = [np.array([]) for step in range(len(measure_list))]
+beta_dist_list = [np.array([]) for step in range(len(measure_list))]
 
 
-Omega_list_composite = np.array([])
+Gamma_list_composite = np.array([])
 decimation_type_composite = np.array([], dtype=bool)
 
 cluster_dict_list = []
@@ -59,25 +59,25 @@ for item in data:  #Sending to processes
     for inst in range(n_runs):  #Within each process
         
         #J_ij_vals = fill_J_ij_matrix(L*L, nn_ind, nnn_ind, a, b)
-        J_ij_vals = fill_J_ij_matrix_width(L*L, nn_ind, a, b, w)
-        h_vals = np.exp(-np.random.exponential(size=L*L))
-        test = system(L*L, deepcopy(nn_ind), J_ij_vals, h_vals)
+        zeta_ij_vals = fill_zeta_ij_matrix_width(L*L, nn_ind, a, b, w)
+        beta_vals = np.random.exponential(size=L*L)
+        test = log_system(L*L, deepcopy(nn_ind), zeta_ij_vals, beta_vals)
         check_acc = 0
         for i in range(steps):
             test.decimate()
             if i in measure_list: 
-                h_remain = test.h_vals[test.h_vals!=0]
-                h_dist_list[check_acc] = np.concatenate((h_dist_list[check_acc],-np.log(h_remain/test.Omega)))
+                beta_remain = test.beta_vals[test.beta_vals!=0]
+                beta_dist_list[check_acc] = np.concatenate((beta_dist_list[check_acc],beta_remain-test.Gamma))
 
-                J_remain = -np.log(sparse.find(test.J_ij_vals)[2]) + np.log(test.Omega)
-                J_dist_list[check_acc] = np.concatenate((J_dist_list[check_acc], J_remain))
+                zeta_remain = sparse.find(test.zeta_ij_vals)[2] - test.Gamma
+                zeta_dist_list[check_acc] = np.concatenate((zeta_dist_list[check_acc], zeta_remain))
 
                 check_acc+=1
-        Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
+        Gamma_list_composite = np.concatenate((Gamma_list_composite, np.array(test.Gamma_array)))
         decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
         cluster_dict_list.append(test.clust_dict)
         reverse_clust_dict_list.append(test.reverse_dict)
-data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
+data = (zeta_dist_list, beta_dist_list, Gamma_list_composite, decimation_type_composite)
 clust_data = [cluster_dict_list, reverse_clust_dict_list]
 
 # Send the results back to the master processes
@@ -93,23 +93,23 @@ if rank == 0:
     
     ts = str(int(time.time()))
     
-    with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
+    with open("output/LogIsing_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(processed_data, fp)
 
-    with open("output/Ising_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
+    with open("output/LogIsing_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(clust_list_final, fp)
 
     #with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
         #pickle.dump(J_dist_list, fp)
 
-    with open("output/Ising_2D_input_"+ts+".pkl", "wb") as fp:
+    with open("output/LogIsing_2D_input_"+ts+".pkl", "wb") as fp:
         pickle.dump(input_dict, fp)
     
     input_dict['ts'] = ts
     input_dict.pop('measure_list')
 
-    if not os.path.exists("output/log_file.csv"):
-        with open("output/log_file.csv", 'w') as csv_file:
+    if not os.path.exists("output/Loglog_file.csv"):
+        with open("output/Loglog_file.csv", 'w') as csv_file:
             header = list(input_dict.keys())
             row = list(input_dict.values())
 
@@ -118,7 +118,7 @@ if rank == 0:
             csv_writer.writerow(row)
 
     else:
-        with open("output/log_file.csv", 'a') as csv_file:
+        with open("output/Loglog_file.csv", 'a') as csv_file:
             row = list(input_dict.values())
             csv_writer = csv.writer(csv_file, lineterminator='\n')
             csv_writer.writerow(row)

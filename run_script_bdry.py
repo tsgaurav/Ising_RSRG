@@ -34,7 +34,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 10
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'w_blk':w_blk, 'w_bdry':w_bdry,'w_mixed':w_mixed, "n_runs":n_runs*n_processes}
 

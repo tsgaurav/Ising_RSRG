@@ -96,9 +96,10 @@ for item in data:  #Sending to processes
         decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
         cluster_dict_list.append(test.clust_dict)
         reverse_clust_dict_list.append(test.reverse_dict)
+        bdry_dict_list.append(test.bdry_dict)
 #data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
 data = (h_dist_list_blk, h_dist_list_bdry, Omega_list_composite, decimation_type_composite)
-clust_data = [cluster_dict_list, reverse_clust_dict_list]
+clust_data = [cluster_dict_list, reverse_clust_dict_list, bdry_dict_list]
 
 # Send the results back to the master processes
 

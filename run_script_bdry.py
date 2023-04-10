@@ -77,6 +77,7 @@ for item in data:  #Sending to processes
         for i in range(steps):
             test.decimate()
             if i in measure_list: 
+                continue
                 h_remain_blk = test.h_vals[~bdry_dict]
                 h_remain_blk = h_remain_blk[h_remain_blk!=0]
 
@@ -86,25 +87,22 @@ for item in data:  #Sending to processes
                 h_dist_list_blk[check_acc] = np.concatenate((h_dist_list_blk[check_acc],-np.log(h_remain_blk/test.Omega)))
                 h_dist_list_bdry[check_acc] = np.concatenate((h_dist_list_bdry[check_acc],-np.log(h_remain_bdry/test.Omega)))
                 
-                
                 #Need to figure out how to read off the bond matrix, since we have blk-blk, blk-bdry and bdry-bdry couplings
-                #J_remain = -np.log(sparse.find(test.J_ij_vals)[2]) + np.log(test.Omega)
-                #J_dist_list[check_acc] = np.concatenate((J_dist_list[check_acc], J_remain))
 
                 check_acc+=1
-        Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
-        decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
+        #Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
+        #decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
         cluster_dict_list.append(test.clust_dict)
         reverse_clust_dict_list.append(test.reverse_dict)
         bdry_dict_list.append(test.bdry_dict)
-#data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
-data = (h_dist_list_blk, h_dist_list_bdry, Omega_list_composite, decimation_type_composite)
+
+#data = (h_dist_list_blk, h_dist_list_bdry, Omega_list_composite, decimation_type_composite)
 clust_data = [cluster_dict_list, reverse_clust_dict_list, bdry_dict_list]
 
 # Send the results back to the master processes
 
 
-processed_data = comm.gather(data,root=0)
+#processed_data = comm.gather(data,root=0)
 clust_list_final = comm.gather(clust_data, root=0)
 
 
@@ -114,8 +112,8 @@ if rank == 0:
     
     ts = str(int(time.time()))
     
-    with open("bdry_output/IsingB_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
-        pickle.dump(processed_data, fp)
+    #with open("bdry_output/IsingB_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
+    #    pickle.dump(processed_data, fp)
 
     with open("bdry_output/IsingB_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(clust_list_final, fp)

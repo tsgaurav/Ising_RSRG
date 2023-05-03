@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import os, csv, sys, pickle, time
 import pandas as pd
 
-log_file = pd.read_csv("openBC/bdry_log_file.csv")
-start_ind = 0
-end_ind = 1
+log_file = pd.read_csv("output/pre_09_03_23/log_file.csv")
+start_ind = 40
+end_ind = None
 selected_files = log_file[start_ind:end_ind]
 
 def generate_corr_matrix(reverse_dict, L):
@@ -43,6 +43,7 @@ rank = comm.Get_rank()            #number of the process running the code
 size = comm.Get_size()  #total number of processes running
 
 N = len(ts_list)
+#print(N)
 
 def main():
     if (rank==0):
@@ -59,7 +60,7 @@ def worker(i):
         n_runs = n_runs_list[nbr]
         L = L_list[nbr]
 
-        with open("openBC/IsingB_2D_clusters_"+str(ts)+".pkl", "rb") as fp:   
+        with open("output/pre_09_03_23/Ising_2D_clusters_"+str(ts)+".pkl", "rb") as fp:   
             clust_list_final = pickle.load(fp)
 
         clust_dict_list, reverse_dict_list = [], []
@@ -75,7 +76,7 @@ def worker(i):
             mean_corr_mat += generate_corr_matrix_alt2(clust_dict_list[instance], reverse_dict_list[instance], L)
         mean_corr_mat = mean_corr_mat/n_runs
         
-        with open("openBC/IsingB_2D_cmat_"+str(ts)+".pkl", "wb") as fp:   #Pickling
+        with open("output/pre_09_03_23/Ising_2D_cmat_"+str(ts)+".pkl", "wb") as fp:   #Pickling
             pickle.dump(mean_corr_mat, fp)
         comm.send("Complete", dest=0, tag=11)
         

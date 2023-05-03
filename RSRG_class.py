@@ -2,7 +2,7 @@
 from aux_funcs import *
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from iminuit import cost, Minuit
+#from iminuit import cost, Minuit
 
 
 class system:

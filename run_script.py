@@ -27,7 +27,7 @@ measure_list = gen_check_list(L*L, steps-1, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 10
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 
@@ -45,12 +45,12 @@ data = comm.scatter(data, root=0)
 index = 0
 
 
-J_dist_list = [np.array([]) for step in range(len(measure_list))]
-h_dist_list = [np.array([]) for step in range(len(measure_list))]
+#J_dist_list = [np.array([]) for step in range(len(measure_list))]
+#h_dist_list = [np.array([]) for step in range(len(measure_list))]
 
 
-Omega_list_composite = np.array([])
-decimation_type_composite = np.array([], dtype=bool)
+#Omega_list_composite = np.array([])
+#decimation_type_composite = np.array([], dtype=bool)
 
 cluster_dict_list = []
 reverse_clust_dict_list = []
@@ -66,6 +66,7 @@ for item in data:  #Sending to processes
         for i in range(steps):
             test.decimate()
             if i in measure_list: 
+                continue 
                 h_remain = test.h_vals[test.h_vals!=0]
                 h_dist_list[check_acc] = np.concatenate((h_dist_list[check_acc],-np.log(h_remain/test.Omega)))
 
@@ -73,17 +74,17 @@ for item in data:  #Sending to processes
                 J_dist_list[check_acc] = np.concatenate((J_dist_list[check_acc], J_remain))
 
                 check_acc+=1
-        Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
-        decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
+        #Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
+        #decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
         cluster_dict_list.append(test.clust_dict)
         reverse_clust_dict_list.append(test.reverse_dict)
-data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
+#data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
 clust_data = [cluster_dict_list, reverse_clust_dict_list]
 
 # Send the results back to the master processes
 
 
-processed_data = comm.gather(data,root=0)
+#processed_data = comm.gather(data,root=0)
 clust_list_final = comm.gather(clust_data, root=0)
 
 
@@ -93,14 +94,11 @@ if rank == 0:
     
     ts = str(int(time.time()))
     
-    with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
-        pickle.dump(processed_data, fp)
+    #with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
+    #    pickle.dump(processed_data, fp)
 
     with open("output/Ising_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(clust_list_final, fp)
-
-    #with open("output/Ising_2D_J_dist_"+ts+".pkl", "wb") as fp:   #Pickling
-        #pickle.dump(J_dist_list, fp)
 
     with open("output/Ising_2D_input_"+ts+".pkl", "wb") as fp:
         pickle.dump(input_dict, fp)

@@ -29,7 +29,7 @@ w_mat = np.array([[w_blk, w_mixed],[w_mixed, w_blk]])
 ind_dict, adj_ind, bdry_dict = triangle_lattice_boundary_dictionary(L)
 
 
-measure_list = gen_check_list(L*L, steps-1, 20)
+measure_list = L*L - gen_check_list(L*L, steps, 20)
  
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
@@ -40,7 +40,7 @@ input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'w_blk':w_blk, 'w
 
 
 if rank == 0: # The master is the only process that reads the file
-	ts = str(int(time.time()))
+	ts = str(int(100*time.time()+100*np.random.random()))[2:]
 	data = [[ts]]*n_processes
 	with open("bdry_output/IsingB_2D_output_"+ts+".txt", "w") as writer:
 		writer.write("##Output"+'\n')
@@ -76,7 +76,7 @@ for item in data:  #Sending to processes
 		test = boundary_system(L*L, deepcopy(adj_ind), deepcopy(bdry_dict), J_ij_vals, h_vals)
 
 		check_acc = 0
-		for i in range(steps):
+		for i in range(steps+1):
 			test.decimate()
 			if i in measure_list: 
 				h_remain_blk = test.h_vals[~bdry_dict]
@@ -97,8 +97,6 @@ for item in data:  #Sending to processes
                 #Need to figure out how to read off the bond matrix, since we have blk-blk, blk-bdry and bdry-bdry couplings
 
 				check_acc+=1
-        #Omega_list_composite = np.concatenate((Omega_list_composite, np.array(test.Omega_array)))
-        #decimation_type_composite = np.concatenate((decimation_type_composite, np.array(test.coupling_dec_list, dtype=bool)))
 		cluster_dict_list.append(test.clust_dict)
 		reverse_clust_dict_list.append(test.reverse_dict)
 		bdry_dict_list.append(test.bdry_dict)

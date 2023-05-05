@@ -29,7 +29,7 @@ mpiexec run_script_bdry.py %s
 
 """
 
-for L in [80, 100]:
+for L in [60, 80, 100]:
 	for w_blk in np.arange(2.4,3.2, 0.04):
 		for w_bdry in [0.1]:#np.arange(0.01, 0.05, 0.01):
 			for w_mixed in [2.6]:
@@ -37,7 +37,10 @@ for L in [80, 100]:
 				w_bdry = w_blk
 				jobname = str(L) + str(w_blk) + str(w_bdry) + str(w_mixed)
 				input_vals = str(L)+" "+str(w_blk)+" "+str(w_bdry)+" "+str(w_mixed)
-				time_request='10:00:00'
+				time_request = '00:30:00'
+				if L==60: time_request='3:00:00'
+				elif L==80: time_request='4:00:00'
+				elif L==100: time_request='12:00:00'
 				ts = str(time.time())
 				sfile = open(jobname+'.pbs','w')
 				sfile.write(Run_file%(time_request,N_threads,N_threads,jobname+ts,jobname+ts,input_vals))

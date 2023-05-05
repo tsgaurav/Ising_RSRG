@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from aux_funcs import *
 from bdry_aux_funcs import *
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 class boundary_system:
@@ -49,7 +49,7 @@ class boundary_system:
         self.h_vals[i] = self.h_vals[i]*self.h_vals[j]/Omega    
         self.h_vals[j] = 0
         self.bdry_dict[i] = self.bdry_dict[i] or self.bdry_dict[j]
-        self.bdry_dict[j] = False
+        self.bdry_dict[j] = self.bdry_dict[i]
         
         self.clust_dict, self.reverse_dict = update_cluster(self.clust_dict, self.reverse_dict, i, j)
         

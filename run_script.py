@@ -22,7 +22,7 @@ ind_dict, adj_ind = triangle_lattice_dictionary(L)
 nn_ind = triangle_nn_indices(L)
 nnn_ind = triangle_nnn_indices(L)
 
-measure_list = gen_check_list(L*L, steps-1, 20)
+measure_list = L*L - gen_check_list(L*L, steps-1, 20)
  
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
@@ -43,7 +43,7 @@ else:
 
 
 #Divide the data among processes
-ts_data = comm.scatter(data, root=0)
+data = comm.scatter(data, root=0)
 index = 0
 
 
@@ -62,19 +62,23 @@ for item in data:  #Sending to processes
 		J_ij_vals = fill_J_ij_matrix_width(L*L, nn_ind, a, b, w)
 		h_vals = np.exp(-np.random.exponential(size=L*L))
 		test = system(L*L, deepcopy(nn_ind), J_ij_vals, h_vals)
-		check_acc = 0
-		for i in range(steps):
+		for i in range(steps+1):
 			test.decimate()
 			if i in measure_list:
 				h_remain = test.h_vals[test.h_vals!=0]
+				J_remain = -np.log(sparse.find(test.J_ij_vals)[2]) + np.log(test.Omega)
+
 				with open("output/Ising_2D_output_"+item+".txt", "a") as writer:
 					i_num = f"{rank:02}" + f"{inst:02}"
-					writer.write("In"+i_num+"_h_m"+f"{check_acc:02}")
+					writer.write("In"+i_num+"_h_m"+f"{i:02}")
 					json.dump((-np.log(h_remain/test.Omega)).tolist(), writer)
 					writer.write('\n')
-				check_acc+=1
-			cluster_dict_list.append(test.clust_dict)
-			reverse_clust_dict_list.append(test.reverse_dict)
+					writer.write("In"+i_num+"_J_m"+f"{i:02}")
+					json.dump(J_remain.tolist(), writer)
+					writer.write('\n')
+
+		cluster_dict_list.append(test.clust_dict)
+		reverse_clust_dict_list.append(test.reverse_dict)
 #data = (J_dist_list, h_dist_list, Omega_list_composite, decimation_type_composite)
 clust_data = [cluster_dict_list, reverse_clust_dict_list]
 

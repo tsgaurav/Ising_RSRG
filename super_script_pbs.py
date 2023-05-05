@@ -27,12 +27,14 @@ mpiexec run_script.py %s
 """
 
 #os.system("pwd")
-for L in [80, 100]:
+for L in [60, 80, 100]:
 	for w in np.arange(2.4, 3.2, 0.04):
 		for a in [0.1]:#np.arange(0.01, 0.05, 0.01):
 			jobname = str(L)+str(w)+str(a)
 			input_vals = str(w)+" "+str(L)+" "+str(a)
-			time_request='10:00:00'
+			if L==60: time_request='2:00:00'
+			elif L==80: time_request='4:00:00'
+			elif L==100: time_request='12:00:00'
 			ts = str(time.time())
 			sfile = open(jobname+'.pbs','w')
 			sfile.write(Run_file%(time_request, N_threads,N_threads,jobname+ts,jobname+ts,input_vals))

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from aux_funcs import *
-#import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+#from scipy.optimize import curve_fit
 #from iminuit import cost, Minuit
 
 
@@ -84,10 +83,3 @@ class system:
         update_adjacency_h(self.adj_ind, i)
         return None
     
-    def extract_width(self):
-        #Get width of exponential distribution by fitting field couplings to normalized exponential
-        h_remain = self.h_vals[self.h_vals!=0]
-        c = cost.UnbinnedNLL(-np.log(h_remain/self.Omega), exponential_dist_norm)
-        m = Minuit(c, a=0.8)
-        m.migrad()
-        return m.values[0]

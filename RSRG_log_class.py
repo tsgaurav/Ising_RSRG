@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from log_aux_funcs import *
+from aux_funcs import *
 #import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
@@ -15,6 +16,7 @@ class log_system:
         self.Gamma_array = []
         self.Gamma_0 = 0
         self.Gamma = 0
+        self.num_dec = 0
         
         self.clust_dict = {i:i for i in range(size)}
         self.reverse_dict = {i:[i] for i in range(size)}
@@ -39,7 +41,17 @@ class log_system:
         self.Gamma_array.append(Gamma)
         
         if self.track_moments: self.moment_list.append(self.get_moment())
+        if self.num_dec%20 == 0: 
+            mask = np.any(self.zeta_ij_vals>6)
 
+            r_ind, c_ind = mask.nonzero()
+            if len(r_ind)>0:
+                self.zeta_ij_vals[mask] = 0
+                self.zeta_ij_vals.eliminate_zeros()
+
+                self.adj_ind = purge_weak_bonds(self.adj_ind, r_ind, c_ind)
+            
+        self.num_dec+=1
         return None
     
     def zeta_decimation(self, Gamma):

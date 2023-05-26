@@ -71,4 +71,9 @@ def update_cluster(cluster_dict, reverse_dict,site1, site2):
 
     return cluster_dict, reverse_dict
 
+def purge_weak_bonds(adj_ind, r_ind, c_ind):
+    for ind in range(len(r_ind)):
+        adj_ind[r_ind[ind]] = list(set(adj_ind[r_ind[ind]])-set([c_ind[ind]]))
+    return adj_ind
+
 

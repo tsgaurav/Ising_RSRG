@@ -167,25 +167,25 @@ def update_adjacency_J_ij(adj_ind, i, j):
     #Also deletes index from the adjacency list of other indices
     adj_i = adj_ind[i]
     adj_j = adj_ind[j]
-    
+
     adj_i_new = list(set(adj_i+adj_j))
     adj_i_new = list(set(adj_i_new)-set([i, j]))
     adj_ind[i] = adj_i_new
     adj_ind[j] = []
-    
+
     for k in adj_i_new:
-        adj_ind[k] = list(set(adj_ind[k]+[i])-set([j]))
-        
+        adj_ind[k] = list(set(adj_ind[k]+[i])-set([j])-set([k]))
+
     return adj_ind
 
 def update_adjacency_h(adj_ind, i):
     #Updates adjacency set of every element in adj(i) with adj(i)
     #Also deletes index i from adj(k) for all k in adj(i)
     adj_i = adj_ind[i]
-    
+
     for k in adj_ind[i]:
-        adj_ind[k] = list(set(adj_ind[k]+adj_i)-set([i]))
-        
+        adj_ind[k] = list(set(adj_ind[k]+adj_i)-set([i])-set([k]))
+
     adj_ind[i] = []
     return adj_ind
     

@@ -23,18 +23,18 @@ module load py-virtualenv
 cd /scratch/st-ianaffle-1/tenkila/Ising_RSRG 
 source ../env_py/bin/activate
 
-mpiexec run_script.py %s
+mpiexec log_run_script.py %s
 """
 
 #os.system("pwd")
-for L in [60, 80, 100]:
-	for w in np.arange(2.5, 2.9, 0.02):
+for L in [100]:
+	for w in np.arange(4.5, 5.2, 0.05):
 		for a in [0.1]:#np.arange(0.01, 0.05, 0.01):
 			jobname = str(L)+str(w)+str(a)
 			input_vals = str(w)+" "+str(L)+" "+str(a)
-			if L==60: time_request='1:00:00'
-			elif L==80: time_request='3:00:00'
-			elif L==100: time_request='8:00:00'
+			if L<=60: time_request='02:00:00'
+			elif L==80: time_request='6:00:00'
+			elif L==100: time_request='12:00:00'
 			#time_request = '36:00:00'
 			ts = str(time.time())
 			sfile = open(jobname+'.pbs','w')

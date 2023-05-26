@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 from aux_funcs import *
-#from scipy.optimize import curve_fit
-#from iminuit import cost, Minuit
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 
 class system:
     
-    def __init__(self, size, adj_ind, J_ij_vals, h_vals, measure_step=20, sparsify=False):
+    def __init__(self, size, adj_ind, J_ij_vals, h_vals, measure_step=20, sparsify=False, track_moments=False):
         
         self.size = size
         self.adj_ind = adj_ind
@@ -23,10 +23,13 @@ class system:
         self.Omega_0 = max(h_vals.max(), J_ij_vals.max())
         self.Omega = self.Omega_0 
         
+        self.track_moments = track_moments
+        self.moment_list = [1.0]
+        
         self.clust_dict = {i:i for i in range(size)}
         self.reverse_dict = {i:[i] for i in range(size)}  #Cluster index is key and vals is list with lattice indices in cluster 
         
-        
+
         return None
     
     def decimate(self):
@@ -43,7 +46,7 @@ class system:
             self.coupling_dec_list.append(False)
          
         #if self.N%self.measure_step==0: self.R0_array.append(self.extract_width())
-        
+        if self.track_moments: self.moment_list.append(self.get_moment())
         return None
     
     def J_decimation(self, Omega):
@@ -82,4 +85,8 @@ class system:
 
         update_adjacency_h(self.adj_ind, i)
         return None
-    
+   
+    def get_moment(self):
+        rd = self.reverse_dict
+        clust_size_list = np.array([len(clust) for clust in rd.values() if clust is not None])
+        return clust_size_list.mean()

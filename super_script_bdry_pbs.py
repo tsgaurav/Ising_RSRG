@@ -24,17 +24,17 @@ module load py-virtualenv
 cd /scratch/st-ianaffle-1/tenkila/Ising_RSRG
 source ../env_py/bin/activate
 
-mpiexec run_script_bdry.py %s
+mpiexec run_script_bdry_temp.py %s
 
 
 """
 
 for L in [60, 80, 100]:
-	for w_blk in np.arange(2.4,3.2, 0.04):
-		for w_bdry in [0.1]:#np.arange(0.01, 0.05, 0.01):
+	for w_blk in np.arange(1.5,4, 0.2):
+		for w_bdry in [0.01]:#np.arange(1, 4, 0.2):
 			for w_mixed in [2.6]:
 				w_mixed = w_blk
-				w_bdry = w_blk
+				#w_bdry = w_blk
 				jobname = str(L) + str(w_blk) + str(w_bdry) + str(w_mixed)
 				input_vals = str(L)+" "+str(w_blk)+" "+str(w_bdry)+" "+str(w_mixed)
 				time_request = '00:30:00'

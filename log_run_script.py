@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from mpi4py import MPI
 import numpy as np
+from log_aux_funcs import *
 from aux_funcs import *
-from RSRG import *
-from RSRG_class import *
+from RSRG_log_class import *
 from copy import deepcopy
 import pandas as pd
 import time, pickle, sys, csv, os, json
@@ -13,7 +13,7 @@ rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
 
-out_dir = "output/mag_moment_runs/" 
+out_dir = "log_output/run_set_4/" 
 L = int(sys.argv[2])
 steps = L*L - 20 #int(0.992*L*L)
 measure_step = 20
@@ -30,7 +30,7 @@ measure_list = L*L - gen_check_list(L*L, steps, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 10
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 
@@ -38,7 +38,7 @@ input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':
 if rank == 0: # The master is the only process that reads the file
 	ts = str(int(100*time.time()+100*np.random.random()))[2:]
 	data = [[ts]]*n_processes
-	with open(out_dir+"Ising_2D_output_"+ts+".txt", "w") as writer:
+	with open(out_dir+"LIsing_2D_output_"+ts+".txt", "w") as writer:
 		writer.write("##Output"+'\n')
 
 else:
@@ -63,22 +63,22 @@ moment_list_list = []
 
 for item in data:  #Sending to processes
 	for inst in range(n_runs):  #Within each process
-		J_ij_vals = fill_J_ij_matrix_width(L*L, nn_ind, a, b, w)
-		h_vals = np.exp(-np.random.exponential(size=L*L))
-		test = system(L*L, deepcopy(nn_ind), J_ij_vals, h_vals, track_moments=track_moments)
+		zeta_ij_vals = fill_zeta_ij_matrix_width(L*L, nn_ind, a, b, w)
+		beta_vals = np.random.exponential(size=L*L)
+		test = log_system(L*L, deepcopy(nn_ind), zeta_ij_vals, beta_vals, track_moments=track_moments)
 		for i in range(steps+1):
 			test.decimate()
 			if i in measure_list:
-				h_remain = test.h_vals[test.h_vals!=0]
-				J_remain = -np.log(sparse.find(test.J_ij_vals)[2]) + np.log(test.Omega)
+				beta_remain = test.beta_vals[test.beta_vals!=0]
+				zeta_remain = test.zeta_ij_vals.data[test.zeta_ij_vals.data<10]
 
-				with open(out_dir+"Ising_2D_output_"+item+".txt", "a") as writer:
+				with open(out_dir+"LIsing_2D_output_"+item+".txt", "a") as writer:
 					i_num = f"{rank:02}" + f"{inst:02}"
 					writer.write("In"+i_num+"_h_m"+f"{i:02}")
-					json.dump((-np.log(h_remain/test.Omega)).tolist(), writer)
+					json.dump(beta_remain.tolist(), writer)
 					writer.write('\n')
 					writer.write("In"+i_num+"_J_m"+f"{i:02}")
-					json.dump(J_remain.tolist(), writer)
+					json.dump(zeta_remain.tolist(), writer)
 					writer.write('\n')
 
 		cluster_dict_list.append(test.clust_dict)
@@ -101,10 +101,10 @@ if rank == 0:
     #with open("output/Ising_2D_output_"+ts+".pkl", "wb") as fp:   #Pickling
     #    pickle.dump(processed_data, fp)
 
-    with open(out_dir+"Ising_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
+    with open(out_dir+"LIsing_2D_clusters_"+ts+".pkl", "wb") as fp:   #Pickling
         pickle.dump(clust_list_final, fp)
 
-    with open(out_dir+"Ising_2D_input_"+ts+".pkl", "wb") as fp:
+    with open(out_dir+"LIsing_2D_input_"+ts+".pkl", "wb") as fp:
         pickle.dump(input_dict, fp)
     
     input_dict['ts'] = ts

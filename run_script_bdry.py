@@ -16,7 +16,7 @@ rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
 L = int(sys.argv[1])
-steps = int(0.992*L*L)
+steps = L*L - 20#int(0.992*L*L)
 a_mat = np.array([[0.1, 0.1],[0.1, 0.1]])
 b_mat = np.array([[0.105, 0.105],[0.105, 0.105]])
 

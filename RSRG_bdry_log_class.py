@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-from log_aux_funcs import *
-#from aux_funcs import *
-#import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+from aux_funcs import *
+from log_aux_funcs import*
+from bdry_log_aux_funcs import *
 
-class log_system:
+class bdry_log_system:
     
-    def __init__(self, size, adj_ind, zeta_ij_vals, beta_vals, track_moments = False):
+    def __init__(self, size, adj_ind, bdry_dict, zeta_ij_vals, beta_vals, track_moments = False):
         
         self.size = size
         self.adj_ind = adj_ind
         self.zeta_ij_vals = zeta_ij_vals
         self.beta_vals = beta_vals
+        self.bdry_dict = bdry_dict
         
         self.Gamma_array = []
         self.Gamma_0 = 0
@@ -38,7 +38,7 @@ class log_system:
         self.Gamma_array.append(Gamma)
         
         if self.track_moments: self.moment_list.append(self.get_moment())
-        if self.num_dec%50 == 0: 
+        if False:#self.num_dec%50 == 0: 
             mask = np.any(self.zeta_ij_vals>10)
 
             r_ind, c_ind = mask.nonzero()
@@ -64,6 +64,9 @@ class log_system:
 
         self.beta_vals[i] +=  self.beta_vals[j]    
         self.beta_vals[j] = 0
+        
+        self.bdry_dict[i] = self.bdry_dict[i] or self.bdry_dict[j]
+        self.bdry_dict[j] = self.bdry_dict[i]
 
         self.adj_ind = update_adjacency_zeta_ij(self.adj_ind, i, j)
 

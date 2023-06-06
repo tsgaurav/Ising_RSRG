@@ -38,8 +38,8 @@ class log_system:
         self.Gamma_array.append(Gamma)
         
         if self.track_moments: self.moment_list.append(self.get_moment())
-        if self.num_dec%50 == 0: 
-            mask = np.any(self.zeta_ij_vals>10)
+        if False:#self.num_dec%50 == 0: 
+            mask = np.any(self.zeta_ij_vals>30)
 
             r_ind, c_ind = mask.nonzero()
             if len(r_ind)>0:

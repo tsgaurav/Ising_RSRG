@@ -6,14 +6,14 @@ from aux_funcs import *
 from RSRG_log_class import *
 from copy import deepcopy
 import pandas as pd
-import time, pickle, sys, csv, os, json
+import time, pickle, sys, csv, os, json, fasteners
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
 
-out_dir = "log_output/run_set_4/" 
+out_dir = "log_output/run_set_large_inst/" 
 L = int(sys.argv[2])
 steps = L*L - 20 #int(0.992*L*L)
 measure_step = 20
@@ -30,13 +30,14 @@ measure_list = L*L - gen_check_list(L*L, steps, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 10
+n_runs = 20
 
-input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
+input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes, 'misc':'no bond pruning, storing bonds <omega=15'}
 
 
 if rank == 0: # The master is the only process that reads the file
-	ts = str(int(100*time.time()+100*np.random.random()))[2:]
+	ts = str(int(100*time.time()))[4:]
+	ts += str(L)+str(w*10)+str(a*10)
 	data = [[ts]]*n_processes
 	with open(out_dir+"LIsing_2D_output_"+ts+".txt", "w") as writer:
 		writer.write("##Output"+'\n')
@@ -70,16 +71,25 @@ for item in data:  #Sending to processes
 			test.decimate()
 			if i in measure_list:
 				beta_remain = test.beta_vals[test.beta_vals!=0]
-				zeta_remain = test.zeta_ij_vals.data[test.zeta_ij_vals.data<10]
-
-				with open(out_dir+"LIsing_2D_output_"+item+".txt", "a") as writer:
-					i_num = f"{rank:02}" + f"{inst:02}"
-					writer.write("In"+i_num+"_h_m"+f"{i:02}")
-					json.dump(beta_remain.tolist(), writer)
-					writer.write('\n')
-					writer.write("In"+i_num+"_J_m"+f"{i:02}")
-					json.dump(zeta_remain.tolist(), writer)
-					writer.write('\n')
+				zeta_remain = test.zeta_ij_vals.data[test.zeta_ij_vals.data<15]
+				
+				lock = fasteners.InterProcessLock('/tmp/tmplockfile'+item)
+				gotten = lock.acquire(blocking=True)
+				if gotten:
+					try:
+						with open(out_dir+"LIsing_2D_output_"+item+".txt", "a") as writer:
+							i_num = f"{rank:02}" + f"{inst:02}"
+							writer.write("In"+i_num+"_h_m"+f"{i:02}")
+							json.dump(beta_remain.tolist(), writer)
+							writer.write('\n')
+							writer.write("In"+i_num+"_J_m"+f"{i:02}")
+							json.dump(zeta_remain.tolist(), writer)
+							writer.write('\n')
+							writer.write("In"+i_num+"_r_m"+f"{i:02}")     #Reverse dict
+							json.dump(test.reverse_dict, writer)
+							writer.write('\n')
+					finally:
+						lock.release()
 
 		cluster_dict_list.append(test.clust_dict)
 		reverse_clust_dict_list.append(test.reverse_dict)

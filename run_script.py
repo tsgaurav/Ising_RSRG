@@ -13,7 +13,7 @@ rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
 
-out_dir = "output/mag_moment_runs/" 
+out_dir = "output/fix_test_2/" 
 L = int(sys.argv[2])
 steps = L*L - 20 #int(0.992*L*L)
 measure_step = 20
@@ -30,7 +30,7 @@ measure_list = L*L - gen_check_list(L*L, steps, 20)
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 10
 
 input_dict = {"L":L, "steps":steps,"measure_list":measure_list,'a':a, 'b':b,'w':w, "n_runs":n_runs*n_processes}
 
@@ -70,7 +70,7 @@ for item in data:  #Sending to processes
 			test.decimate()
 			if i in measure_list:
 				h_remain = test.h_vals[test.h_vals!=0]
-				J_remain = -np.log(sparse.find(test.J_ij_vals)[2]) + np.log(test.Omega)
+				J_remain = -np.log(sparse.triu(test.J_ij_vals).data) + np.log(test.Omega)
 
 				with open(out_dir+"Ising_2D_output_"+item+".txt", "a") as writer:
 					i_num = f"{rank:02}" + f"{inst:02}"

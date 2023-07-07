@@ -4,6 +4,7 @@ from sympy import Symbol, Interval
 from sympy.stats import ContinuousRV, sample
 from aux_funcs import *
 from log_aux_funcs import *
+from scipy.sparse import dok_matrix
 
 def triangle_lattice_boundary_dictionary(L, include_nnn=False):
     ind_dict = {}
@@ -43,6 +44,27 @@ def triangle_lattice_boundary_dictionary(L, include_nnn=False):
             adj_ind[ind_0] = list(set(adjs))
     return ind_dict, adj_ind, bdry_dict
 
+def triangle_lattice_boundary_dictionary_rect(Lx, Ly):
+    ind_dict = {}
+    adj_ind = {}
+    bdry_dict = np.zeros(Lx*Ly,dtype=bool)
+    for x in range(Lx):
+        for y in range(Ly):
+            ind_0 = index_map_rect(x,y,Lx, Ly)
+            #nn indices
+            adjs = [index_map_rect(x,(y-1)%Ly, Lx, Ly), index_map_rect(x,(y+1)%Ly, Lx, Ly)]
+            if x-1>=0:
+                adjs.append(index_map_rect((x-1)%Lx,y, Lx, Ly))
+                adjs.append(index_map_rect((x-1)%Lx,(y-(-1)**(x%2))%Ly, Lx, Ly))
+            if x+1<Lx:
+                adjs.append(index_map_rect((x+1),y, Lx, Ly))
+                adjs.append(index_map_rect((x+1),(y-(-1)**(x%2))%Ly, Lx,Ly))
+            if x==0: bdry_dict[ind_0] = True
+            elif x==(Lx-1): bdry_dict[ind_0] = True
+            ind_dict[ind_0] = (x,y)
+            adj_ind[ind_0] = list(set(adjs))
+    return ind_dict, adj_ind, bdry_dict
+
 def fill_beta_vals_bdry(size, bdry_dict, lambda_bdry, lambda_blk):
     # Filling the log-field coupling with exponential distribution of different variance for bulk and boundary
     bdry_size = bdry_dict.sum()
@@ -69,9 +91,45 @@ def fill_zeta_ij_bdry(size, bdry_dict, adj_ind, a_mat, b_mat, w_mat):
         
         
         zeta_ij_vals[ind, bdry_ind] = sparse.lil_matrix(np.array  \
-                                    (random_lin_dist_width(a_mat[tag, 1], b_mat[tag, 1], w_mat[tag, 1], len(bdry_ind))))
+                                    (random_lin_dist_width_v2(a_mat[tag, 1], b_mat[tag, 1], w_mat[tag, 1], len(bdry_ind))))
 
         zeta_ij_vals[ind, blk_ind] = sparse.lil_matrix(np.array  \
-                                    (random_lin_dist_width(a_mat[tag, 0], b_mat[tag, 0], w_mat[tag, 0], len(blk_ind))))
+                                    (random_lin_dist_width_v2(a_mat[tag, 0], b_mat[tag, 0], w_mat[tag, 0], len(blk_ind))))
         
+    return zeta_ij_vals + zeta_ij_vals.T
+
+class RandomLinDistWidthSampler:
+    def __init__(self, a, b, w, L):
+        self.L = L
+        X = Symbol('x')
+        self.distributions = [ContinuousRV(X, (a[0,0]+b[0,0]*X)/(a[0,0]*w[0,0] + b[0,0]*w[0,0]**2/2), Interval(0, w[0,0])),\
+                              ContinuousRV(X, (a[0,1]+b[0,1]*X)/(a[0,1]*w[0,1] + b[0,1]*w[0,1]**2/2), Interval(0, w[0,1])),\
+                              ContinuousRV(X, (a[1,1]+b[1,1]*X)/(a[1,1]*w[1,1] + b[1,1]*w[1,1]**2/2), Interval(0, w[1,1]))]
+        self.samples_cache = [None, None, None]
+
+    def sample(self, coupling_type, n_samples):
+        if self.samples_cache[coupling_type] is None or len(self.samples_cache[coupling_type]) < n_samples:
+            self.samples_cache[coupling_type] = sample(self.distributions[coupling_type], size=(self.L*n_samples))  
+        result = self.samples_cache[coupling_type][:n_samples]
+        self.samples_cache[coupling_type] = self.samples_cache[coupling_type][n_samples:]
+        return result
+
+
+def fill_zeta_ij_bdry_v2(size, bdry_dict, adj_ind,  sampler):
+    zeta_ij_vals = dok_matrix((size, size))
+    
+    for ind in range(size):
+        tag = int(bdry_dict[ind])
+        
+        adj_ind_array = np.array(adj_ind[ind])
+        upper_ind = adj_ind_array[adj_ind_array>ind]
+        
+        bdry_ind = upper_ind[bdry_dict[upper_ind]]
+        blk_ind = upper_ind[~bdry_dict[upper_ind]]
+        
+        zeta_ij_vals[ind, bdry_ind] = sampler.sample(tag+1, len(bdry_ind))
+        zeta_ij_vals[ind, blk_ind] = sampler.sample(tag, len(blk_ind))
+    
+    zeta_ij_vals = zeta_ij_vals.tocsr()
+    
     return zeta_ij_vals + zeta_ij_vals.T

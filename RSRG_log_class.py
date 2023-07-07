@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from log_aux_funcs import *
-#from aux_funcs import *
+from aux_funcs import *
 #import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
+#from scipy.optimize import curve_fit
 
 class log_system:
     
@@ -67,10 +67,15 @@ class log_system:
 
         self.adj_ind = update_adjacency_zeta_ij(self.adj_ind, i, j)
 
-        self.zeta_ij_vals[i,self.adj_ind[i]] += self.zeta_ij_vals[j, self.adj_ind[i]]
-        self.zeta_ij_vals[i,self.adj_ind[i]] /= 2
-        
-        
+        subblock = self.zeta_ij_vals[i, self.adj_ind[i]].toarray()
+        subblock[np.where(subblock == 0)] = 1000
+        subblock_old = self.zeta_ij_vals[j, self.adj_ind[i]].toarray()
+        subblock_old[np.where(subblock_old == 0)] = 1000
+        subblock = np.minimum(subblock, subblock_old)
+        subblock[np.where(subblock==1000)] = 0
+        self.zeta_ij_vals[i, self.adj_ind[i]] = sparse.csr_matrix(subblock)
+        self.zeta_ij_vals[self.adj_ind[i], i] = self.zeta_ij_vals[i,self.adj_ind[i]]
+
         self.zeta_ij_vals[self.adj_ind[i], i] = self.zeta_ij_vals[i,self.adj_ind[i]]
         
         # Set the specified row to zero

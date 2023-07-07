@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from aux_funcs import *
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 
@@ -14,6 +14,7 @@ class system:
         self.h_vals = h_vals
         self.sparsify = sparsify
         
+        self.measure_step = measure_step
         self.N = 0
         self.R0_array = []
         self.Gamma_array = []
@@ -89,4 +90,3 @@ class system:
         rd = self.reverse_dict
         clust_size_list = np.array([len(clust) for clust in rd.values() if clust is not None])
         return clust_size_list.mean()
-    

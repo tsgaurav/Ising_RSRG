@@ -22,8 +22,9 @@ class bdry_log_system:
         self.reverse_dict = {i:[i] for i in range(size)}
         
         self.track_moments = track_moments
-        self.moment_list = [1.0]
-
+        self.bdry_moment_list = [1.0]
+        self.blk_moment_list = [1.0]
+        self.active_clust_list = np.ones(size, dtype=bool)
 
         return None
     
@@ -37,7 +38,9 @@ class bdry_log_system:
         self.Gamma = Gamma
         self.Gamma_array.append(Gamma)
         
-        if self.track_moments: self.moment_list.append(self.get_moment())
+        if self.track_moments: 
+            self.blk_moment_list.append(self.get_moment_bulk())
+            self.bdry_moment_list.append(self.get_moment_bdry())
         if False:#self.num_dec%50 == 0: 
             mask = np.any(self.zeta_ij_vals>10)
 
@@ -70,8 +73,14 @@ class bdry_log_system:
 
         self.adj_ind = update_adjacency_zeta_ij(self.adj_ind, i, j)
 
-        self.zeta_ij_vals[i,self.adj_ind[i]] += self.zeta_ij_vals[j, self.adj_ind[i]]
-        self.zeta_ij_vals[i,self.adj_ind[i]] /= 2
+        subblock = self.zeta_ij_vals[i, self.adj_ind[i]].toarray()
+        subblock[np.where(subblock == 0)] = 1000
+        subblock_old = self.zeta_ij_vals[j, self.adj_ind[i]].toarray()
+        subblock_old[np.where(subblock_old == 0)] = 1000
+        subblock = np.minimum(subblock, subblock_old)
+        subblock[np.where(subblock==1000)] = 0
+        self.zeta_ij_vals[i, self.adj_ind[i]] = sparse.csr_matrix(subblock)
+        self.zeta_ij_vals[self.adj_ind[i], i] = self.zeta_ij_vals[i,self.adj_ind[i]]
         
         
         self.zeta_ij_vals[self.adj_ind[i], i] = self.zeta_ij_vals[i,self.adj_ind[i]]
@@ -85,55 +94,57 @@ class bdry_log_system:
         
         self.zeta_ij_vals.eliminate_zeros()
         
+        self.active_clust_list[j] = False
+
         return None
     
     def beta_decimation(self, Gamma):
-        i = np.where(self.beta_vals == Gamma)[0][0]
+
+        i = np.flatnonzero(self.beta_vals == Gamma)[0]
         adj_i = self.adj_ind[i]
-        
-        self.zeta_ij_vals.data += (self.Gamma_0 - Gamma) 
-        self.beta_vals[self.beta_vals.nonzero()] += (self.Gamma_0 - Gamma) 
-        
-        """
-        zeta_subblock = self.zeta_ij_vals[np.ix_(adj_i, adj_i)].toarray()
-        old_couplings = sparse.find(self.zeta_ij_vals[adj_i,i])[2]
-        new_couplings = np.add.outer(old_couplings, old_couplings)
-        np.fill_diagonal(new_couplings, 0)
-        zeta_subblock[np.where(zeta_subblock==0)]=1000
-        new_couplings = np.minimum(zeta_subblock, new_couplings)
-        self.zeta_ij_vals[np.ix_(adj_i, adj_i)] = new_couplings
-        
-        """
-        ### GPTest
-        
+
+
+        self.zeta_ij_vals.data += (self.Gamma_0 - Gamma)
+        self.beta_vals[self.beta_vals.nonzero()] += (self.Gamma_0 - Gamma)
+
+        # Retrieve subblock as dense matrix and perform computations in-place
         zeta_subblock = self.zeta_ij_vals[adj_i, :][:, adj_i].toarray()
 
         old_couplings = self.zeta_ij_vals[adj_i, i].data
-
         new_couplings = np.add.outer(old_couplings, old_couplings)
         np.fill_diagonal(new_couplings, 0)
 
-        zeta_subblock[np.where(zeta_subblock == 0)] = 1000
-        
+        # Update zeta_subblock in-place
+        zeta_subblock[zeta_subblock == 0] = 1000
         np.minimum(zeta_subblock, new_couplings, out=zeta_subblock)
 
+        # Convert updated zeta_subblock back to sparse and update zeta_ij_vals in-place
         self.zeta_ij_vals[np.ix_(adj_i, adj_i)] = sparse.csr_matrix(zeta_subblock)
-        
+
         # Set the specified row to zero
         self.zeta_ij_vals.data[self.zeta_ij_vals.indptr[i]:self.zeta_ij_vals.indptr[i +1]] = 0
 
         # Set the specified column to zero
-        bool_arr = self.zeta_ij_vals.indices == i
-        self.zeta_ij_vals.data[bool_arr] = 0
-        
+        self.zeta_ij_vals.data[self.zeta_ij_vals.indices == i] = 0
+
+        # Remove zero entries from the sparse matrix
         self.zeta_ij_vals.eliminate_zeros()
-        
+
+        # Update adjacency
         self.adj_ind = update_adjacency_beta(self.adj_ind, i)
         
+        self.active_clust_list[i] = False
+
         return None
         
         
-    def get_moment(self):
+    def get_moment_bdry(self):
         rd = self.reverse_dict
-        clust_size_list = np.array([len(clust) for clust in rd.values() if clust is not None and self.beta_vals[clust].any()>0])
+        clust_size_list = np.array([len(clust) for clust in rd.values() if clust is not None and self.beta_vals[clust].any()>0 and self.bdry_dict[clust[0]]])
         return clust_size_list.mean()
+    
+    def get_moment_bulk(self):
+        rd = self.reverse_dict
+        clust_size_list = np.array([len(clust) for clust in rd.values() if clust is not None and self.beta_vals[clust].any()>0 and ~self.bdry_dict[clust[0]]])
+        return clust_size_list.mean()
+

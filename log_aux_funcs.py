@@ -10,6 +10,10 @@ def random_lin_dist_width(a, b, w, n_samples):
     X = ContinuousRV(x, (a+b*x)/(a*w + b*w**2/2), Interval(0, w))
     return sample(X, size=(n_samples))
 
+def random_lin_dist_width_v2(a, b, w, n_samples):
+    unif_sample = np.random.uniform(0,1, n_samples)
+    C = 1/(a*w + b*w**2/2)
+    return (np.sqrt((a**2+2*b*unif_sample/C)) - a)/b
 
 def fill_zeta_ij_matrix_width(size, nn_ind, a, b, w):
     zeta_ij_vals = sparse.lil_matrix((size, size))
@@ -18,7 +22,7 @@ def fill_zeta_ij_matrix_width(size, nn_ind, a, b, w):
         adj_ind_array = np.array(nn_ind[ind])
         upper_ind = adj_ind_array[adj_ind_array>ind]
 
-        zeta_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.array(random_lin_dist_width(a, b, w, len(upper_ind))))
+        zeta_ij_vals[ind, upper_ind] = sparse.lil_matrix(np.array(random_lin_dist_width_v2(a, b, w, len(upper_ind))))
 
 
     return zeta_ij_vals + zeta_ij_vals.T

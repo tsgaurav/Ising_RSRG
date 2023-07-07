@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 from aux_funcs import *
 from bdry_aux_funcs import *
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from iminuit import cost, Minuit
 
 class boundary_system:
     

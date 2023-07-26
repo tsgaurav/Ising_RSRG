@@ -19,6 +19,7 @@ __pycache__
 *.npy
 *.png
 *.pkl
+*.txt
 *.csv
 ,*
 *.sh

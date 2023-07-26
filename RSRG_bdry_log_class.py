@@ -52,6 +52,11 @@ class bdry_log_system:
                 self.adj_ind = purge_weak_bonds(self.adj_ind, r_ind, c_ind)
             
         self.num_dec+=1
+        
+        beta_remain_bdry = self.beta_vals[self.bdry_dict]
+        if len(np.nonzero(beta_remain_bdry)[0])==1:
+            site = np.where(beta_remain_bdry[np.nonzero(beta_remain_bdry)[0][0]]==self.beta_vals)[0][0]
+            self.final_bdry_clust = (site, sum(self.Gamma_array), self.beta_vals[site])
         return None
     
     def zeta_decimation(self, Gamma):

@@ -28,8 +28,8 @@ mpiexec log_run_script.py %s
 """
 
 #os.system("pwd")
-for L in [8, 16, 32, 64]:
-	for w in np.arange(4, 7, 0.5):
+for L in [10, 20, 40, 80]:
+	for w in np.arange(5.5, 8, 0.2):
 		w = round(w, 2)
 		for a in [0.1]:#np.arange(0.01, 0.2, 0.01):
 			jobname = str(L)+str(w)+str(a)

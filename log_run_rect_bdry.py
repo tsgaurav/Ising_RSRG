@@ -15,9 +15,10 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank() # get your process ID
 n_processes = comm.size
 
-Ly = 50
-Lx = int(sys.argv[1])
-steps = Lx*Ly - 20#int(0.992*L*L)
+Lx = int(sys.argv[5])
+Ly = int(sys.argv[1])
+Lx = Ly
+steps = Lx*Ly - 1#int(0.992*L*L)
 a_mat = np.array([[0.1, 0.1],[0.1, 0.1]])
 b_mat = np.array([[0.105, 0.105],[0.105, 0.105]])
 
@@ -28,15 +29,17 @@ w_mixed = float(sys.argv[4])
 w_mat = np.array([[w_blk, w_mixed],[w_mixed, w_bdry]])
 
 ind_dict, adj_ind, bdry_dict = triangle_lattice_boundary_dictionary_rect(Lx, Ly)
+bdry_dict = np.zeros(Lx*Ly, dtype=bool)
+bdry_dict[:Ly] = True
 
 
-measure_list = Lx*Ly - gen_check_list(Lx*Ly, steps, 20, 0.1)
+measure_list = Lx*Ly - gen_check_list(Lx*Ly, steps, 10, 0.1)
 
-out_dir = "log_bdry_output/rect_bdry_sweep_pass2/"
+out_dir = "log_bdry_output/bdry_mag_runs/"
 
 #cluster_dict_list = [np.array([]) for step in range(len(measure_list))]
 
-n_runs = 5
+n_runs = 20
 
 input_dict = {"L":(Lx, Ly), "steps":steps,"measure_list":measure_list,'w_blk':w_blk, 'w_bdry':w_bdry,'w_mixed':w_mixed, "n_runs":n_runs*n_processes}
 #input_dict['misc_notes'] = ''
@@ -73,6 +76,9 @@ reverse_clust_dict_list = []
 bdry_dict_list = []
 bdry_moment_list = []
 blk_moment_list = []
+final_clust_list = []
+bdry_final_clust_list = []
+final_energy_list = []
 
 for item in data:  #Sending to processes
 	for inst in range(n_runs):  #Within each process
@@ -81,10 +87,10 @@ for item in data:  #Sending to processes
 		#zeta_ij_vals = fill_zeta_ij_bdry_v2(Lx*Ly, bdry_dict,adj_ind, sampler)
 		beta_vals = fill_beta_vals_bdry(Lx*Ly, bdry_dict, 1.,1.)
         
-		test = bdry_log_system(Lx*Ly, deepcopy(adj_ind), deepcopy(bdry_dict), zeta_ij_vals, beta_vals, track_moments=True)
+		test = bdry_log_system(Lx*Ly, deepcopy(adj_ind), deepcopy(bdry_dict), zeta_ij_vals, beta_vals, track_moments=False)
 
 		check_acc = 0
-		for i in range(steps+1):
+		for i in range(steps):
 			test.decimate()
 			if i in measure_list: 
 				beta_remain_blk = test.beta_vals[~test.bdry_dict]
@@ -137,9 +143,12 @@ for item in data:  #Sending to processes
 		bdry_dict_list.append(test.bdry_dict)
 		bdry_moment_list.append(test.bdry_moment_list)
 		blk_moment_list.append(test.blk_moment_list)
-
+		final_clust_list.append(np.nonzero(test.beta_vals)[0][0])
+		bdry_final_clust_list.append(test.final_bdry_clust)
+		final_energy_list.append(sum(test.Gamma_array))
+        
 #data = (h_dist_list_blk, h_dist_list_bdry, Omega_list_composite, decimation_type_composite)
-clust_data = [cluster_dict_list, reverse_clust_dict_list, bdry_dict_list, bdry_moment_list, blk_moment_list]
+clust_data = [cluster_dict_list, reverse_clust_dict_list, final_clust_list, bdry_final_clust_list, final_energy_list]
 
 # Send the results back to the master processes
 
